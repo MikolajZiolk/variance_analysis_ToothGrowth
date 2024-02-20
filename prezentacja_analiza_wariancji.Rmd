@@ -1,0 +1,249 @@
+---
+title: "Analiza wariancji - długość zębów"
+author: "Mikołaj Ziółkowski, Filip Regulski"
+date: "Semestr zimowy 2023/2024"
+output: 
+  ioslides_presentation:
+    df_print: paged
+    logo: logo.png
+---
+
+<style>
+body {
+  font-size: 0.8 em; 
+}
+
+p {
+  font-size: 0.8em; 
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-size: 0.95em; 
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r include=FALSE}
+library(psych)
+library(ggplot2)
+library(dplyr)
+library(kableExtra)
+library(knitr)
+```
+
+## Wprowadznie
+
+Celem projektu jest przeanalizowanie danych dotyczączących wzrostu zębów u świnek morskich w zależności od różnych metod suplementacji oraz dawek podawanym zwierzętom, w szczególności wykorzystując metodę jaką jest analiza wariancji. Dane, na których oparty jest ten projekt pochodzą z wbudowanego do programu R zestawu danych - **"ToothGrowth"**.
+
+## Zebranie danych
+
+Importujemy potrzebne biblioteki oraz dane z wbudowanego pakietu ToothGrowth.
+
+```{r echo=TRUE}
+dane <- ToothGrowth
+```
+
+Zmieńmy od raz nazwy kolumn dla poprawy czytelności danych oraz ustawiamy odpowiedni format danych.
+
+```{r echo=TRUE}
+colnames(dane) <- c("dlugosc", "suplement", "dawkowanie" )
+dane$dawkowanie <- as.factor(dane$dawkowanie)
+```
+
+## Podstawowe statystyki opisowe
+
+Teraz skupimy się na przedstawieniu podstawowych statystyk opisowych.
+
+### Dla dlugosci zębów
+
+```{r echo=FALSE}
+statystyki1 <- dane %>%
+  summarise(
+    srednia = mean(dlugosc),
+    odchylenie_stan = sd(dlugosc),
+    wariancja = var(dlugosc),
+    mediana = median(dlugosc),
+    zakres_min = min(dlugosc),
+    zakres_max = max(dlugosc),
+    skosnosc = skew(dlugosc),
+    kurtoza = kurtosi(dlugosc)
+  )
+statystyki1
+
+```
+
+## Długość zębów - czynniki warunkujące
+
+### Ze względu na dawkowanie
+
+```{r echo=FALSE}
+statystyki3 <- dane %>%
+  group_by(dawkowanie) %>%
+  summarise(
+    srednia = mean(dlugosc),
+    odchylenie_stan = sd(dlugosc),
+    wariancja = var(dlugosc),
+    mediana = median(dlugosc),
+    zakres_min = min(dlugosc),
+    zakres_max = max(dlugosc),
+    skosnosc = skew(dlugosc),
+    kurtoza = kurtosi(dlugosc)
+  )
+statystyki3
+```
+
+### Ze względu na suplementacje
+
+```{r echo=FALSE}
+statystyki4 <- dane %>%
+  group_by(suplement) %>%
+  summarise(
+    srednia = mean(dlugosc),
+    odchylenie_standardowe = sd(dlugosc),
+    wariancja = var(dlugosc),
+    mediana = median(dlugosc),
+    zakres_min = min(dlugosc),
+    zakres_max = max(dlugosc),
+    skosnosc = skew(dlugosc),
+    kurtoza = kurtosi(dlugosc)
+  )
+statystyki4
+```
+
+## Wykres pudełkowy w zależności od dawkowania
+
+```{r echo=FALSE, fig.width=7, fig.height=3}
+boxplot_dawkowanie <- ggplot(dane, aes(x = factor(dawkowanie), y = dlugosc))+
+  geom_boxplot(fill = "green", color = "darkgreen", width = 0.5)+
+  labs(x = "Dawkowanie", y = "Długość")+
+  theme_minimal()
+boxplot_dawkowanie  
+```
+
+Z wykresu widać, że długości zębów są rozłożone wokół swoich średnich , a mediana stosunkowo rośnie w zależności od dawki. Jednak, wartości maksymalne dla dawek 0,5 i 1 są wyraźnie mniejsze niż dla dawki 2. Może to sugerować, że wyższe dawki suplementacji mogą prowadzić do większych długości zębów.
+
+## Wykres gęstości w zależności od dawkowania
+
+```{r echo = FALSE, fig.width=7, fig.height=3}
+density_dawkowanie <- ggplot(dane, aes(x = dlugosc, fill = factor(dawkowanie)))+
+  geom_density(alpha = 0.5)+
+  scale_fill_discrete(name = "Dawkowanie")+
+  labs(x = "Długość", y = "Gęstość")
+  
+density_dawkowanie
+```
+
+Można zaobserwować, że gęstość rozkładu dla dawki 0,5 jest przesunięta w lewo w stosunku do innych dawek, co oznacza, żę długości żebów dla tej dawki są mniejsze niż dla innych. Dla dawki 1 i 2 gęstość rozkładu jest bardziej skoncentrowana w okolicach wartości średniej, co oznacza, że długości zębów są bardziej jednorodne dla tych dawek.Dla dawki 2 gęstość rozkładu jest nieco wyższa, co sugeruje, że wyższa dawka suplementacji prowadzi do większych długości zębów.
+
+## Wykres pudełkowy w zależności od podawanego suplementu
+
+```{r echo = FALSE, fig.width=7, fig.height=3}
+boxplot_suplement <- ggplot(dane, aes(x = factor(suplement), y = dlugosc))+
+  geom_boxplot(fill = "lightblue", color = "darkblue", width = 0.5)+
+  labs(x = "Suplement", y = "Długość")+
+  scale_x_discrete(labels = c("Sok pomarańczowy", "Kwas askorbinowy"))+
+  theme_minimal()
+boxplot_suplement  
+```
+
+Z wykresu widać, że mediana długości zębów świnek, które otrzymały sok pomarańczowy, jest nieco wyższa niż dla tych, które otrzymały kwas askorbinowy. Można zauważyć, iż maksymalna długość zębów osiągnięta przy kwasie askorbinowym jest lekko większa niż dla drugiego suplementu.
+
+## Wykres gęstości w zależności od podawanego suplementu
+
+```{r echo=FALSE, fig.width=7, fig.height=3}
+density_suplement <- ggplot(dane, aes(x = dlugosc, fill = factor(suplement)))+
+  geom_density(alpha = 0.5)+
+  scale_fill_discrete(name = "Suplement", labels = c("Sok pomarańczowy", "Kwas askorbinowy"))+
+  labs(x = "Długość", y = "Gęstość")
+
+density_suplement
+```
+
+Na wykresie widać, iż dla soku pomarańczowego wykres jest przesunięty bardziej w prawą stronę od średniej, co wskazuje na to ,że dla tego sumplementu długości zębów są większe. Wartosci dla kwasu askorbinowego są bardziej skoncentrowane wokół średniej co wskazuje na większą jednorodność długości zębów.
+
+## Analiza wariancji dla dawkowania
+
+Teraz przejdziemy do analizy wariancji ANOVA, aby zbadać równość wartości oczekiwanych długości zębów świnek morskich w zależności od dawkowania witaminy C.
+
+```{r}
+anova_dose <- aov(dlugosc ~ dawkowanie, data = dane)
+print(summary(anova_dose))
+```
+
+P-value jest mniejsze niż poziom istotności 0.05, co oznacza, że odrzucamy hipotezę H0 o równości wartości oczekiwanych, co sugeruje istotne różnice w długości zębów w zależności od dawkowania.
+
+## Tukey's Test
+
+Test ANOVA wykazał różnice, jednak aby dowiedzieć się które pary różnią się statystycznie przeprowadzimy test Tukey'a.
+
+```{r echo = FALSE}
+tukey.oneway_dose <- TukeyHSD(anova_dose)
+tukey.oneway_dose
+```
+
+Wyniki testu Tukeya wskazują na istotne statystycznie różnice w średnich długościach zębów między wszystkimi trzema poziomami zmiennej. **dawkowanie.**
+
+## Analiza wariancji dla podawanego suplementu
+
+Test ANOVA dla różnych suplementacji.
+
+```{r}
+anova_supp <- aov(dlugosc ~ suplement, data = dane)
+print(summary(anova_supp))
+```
+
+P-value jest większa niż poziom istotności 0.05, co oznacza, że nie ma podstaw do odrzucenia hipotezy zerowej. Hipoteza zerowa zakłada równość średnich długości.Brak istotnych różnic w długości zębów w zależności od rodzaju suplementu
+
+Oznacza to, że możemy przejść do sprawdzenia założeń ANOVA.
+
+## Test homogeniczności
+
+Pierwszym założeniem ANOVA jest homogeniczność wariancji, którą w pakiecie R możemy sprawdzić korzystając z funkcji bartlett.test.
+
+```{r echo=TRUE}
+bartlett_supp <- bartlett.test(dane$dlugosc ~ dane$suplement)
+```
+
+```{r echo = FALSE}
+cat("P-value z testu Bartletta:", bartlett_supp$p.value, "\n")
+```
+
+Wynik ten nie dostarcza podstaw do odrzucenia hipotezy zerowej o homogeniczności wariancji. Oznacza to, że założenie o równości wariancji dla poszczególnych suplementów jest spełnione.
+
+## Test normalności
+
+Z pomocą tutaj przychodzi funkcja tapply, dzięki której możemy zastosować test Shapiro-Wilka, aby sprawdzić czy dane pochodzą z rozkładu normalnego.
+
+```{r echo=TRUE}
+shapiro <- tapply(dane$dlugosc, dane$suplement, shapiro.test)
+```
+
+```{r echo = FALSE}
+  wynik<- data.frame(
+          Grupa = c("Sok pomarańczowy", "Kwas askorbinowy"),
+          P_value = sapply(shapiro, function(x) x$p.value)
+)
+wynik
+    
+```
+
+Założenie o normalności pomiarów dla soku pomarańczowego należy odrzucić.
+
+## SHINY
+W aplikacji shiny została przeprowadzona analiza danych skupiając się na różnych aspektach, takich jak statystyki opisowe, wykresy gęstości i wykresy pudełkowe dla długości zębów świnek. Aplikacja jest podzielona na różne zakładki, z których każda obsługuje inne aspekty analizy danych.
+
+1.  Statystyki - pozwala na wybór czy chcesz wyświetlić statystyki ogólne dotyczące długości zębów lub podział według dawkowania lub suplementacji.
+
+2.  Wykresy- tworzone są wykresy gęstości oraz wykresy pudełkowe pozwalające porównać rozkłady długości zębów w zależności od dawkowania lub suplementacji.
+
+3.  Analiza wariancji dla dawkowania - wykonany zostaje test ANOVA oraz test Tukey'a.
+
+4.  Analiza wariancji dla suplementacji - wykonany zostaje test ANOVA oraz założenia do tego testu.        
+W sumie, pozwala ona na interaktywną analizę danych, dostarczając różnorodnych narzędzi wizualizacyjnych i statystycznych.
+
+## Wnioski
+
+Analiza wariancji wykazała istotne różnice w długości zębów ze względu na dawkowanie witaminy C. Dla suplementacji nie uzyskano istotnych wyników, ale należy uwzględnić, że testy założeń nie zostały spełnione dla soku pomarańczowego.
